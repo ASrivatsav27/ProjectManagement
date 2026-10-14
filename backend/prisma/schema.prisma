@@ -13,13 +13,125 @@ enum Role {
 }
 
 model User {
+  id                Int             @id @default(autoincrement())
+  username          String          @unique
+  email             String          @unique
+  password          String
+  role              Role            @default(TeamMember)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  createdProjects   Project[]       @relation("ProjectCreator")
+  managedProjects   Project[]       @relation("ProjectManager")
+  projectMemberships ProjectMember[]
+  assignedTasks     Task[]          @relation("TaskAssignee")
+  createdTasks      Task[]          @relation("TaskCreator")
+  taskComments      TaskComment[]
+  activityLogs      ActivityLog[]   @relation("ActivityActor")
+}
+
+enum ProjectStatus {
+  Planning
+  Active
+  OnHold
+  Completed
+}
+
+enum TaskStatus {
+  Todo
+  InProgress
+  InReview
+  Done
+}
+
+enum TaskPriority {
+  Low
+  Medium
+  High
+  Critical
+}
+
+model Project {
+  id                Int             @id @default(autoincrement())
+  name              String
+  description       String?
+  startDate         DateTime?
+  deadline          DateTime?
+  status            ProjectStatus   @default(Planning)
+  archivedAt        DateTime?
+  createdById       Int
+  managerId         Int?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  createdBy         User            @relation("ProjectCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  manager           User?           @relation("ProjectManager", fields: [managerId], references: [id], onDelete: SetNull)
+  members           ProjectMember[]
+  tasks             Task[]
+  activityLogs      ActivityLog[]
+
+  @@index([status])
+  @@index([managerId])
+}
+
+model ProjectMember {
+  projectId Int
+  userId    Int
+  joinedAt  DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, userId])
+  @@index([userId])
+}
+
+model Task {
+  id          Int          @id @default(autoincrement())
+  title       String
+  description String?
+  projectId   Int
+  assigneeId  Int?
+  createdById Int
+  priority    TaskPriority @default(Medium)
+  status      TaskStatus   @default(Todo)
+  dueDate     DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignee    User?        @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  createdBy   User         @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  comments    TaskComment[]
+  activityLogs ActivityLog[]
+
+  @@index([projectId, status])
+  @@index([assigneeId, status])
+  @@index([dueDate])
+}
+
+model TaskComment {
   id        Int      @id @default(autoincrement())
-  username  String   @unique
-  email     String   @unique
-  password  String
-  role      Role     @default(TeamMember)
+  taskId    Int
+  authorId  Int?
+  content   String
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author    User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([taskId, createdAt])
+}
+
+model ActivityLog {
+  id        Int      @id @default(autoincrement())
+  projectId Int
+  taskId    Int?
+  actorId   Int?
+  action    String
+  details   String?
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  task      Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  actor     User?    @relation("ActivityActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, createdAt])
+  @@index([taskId, createdAt])
 }
 
 
