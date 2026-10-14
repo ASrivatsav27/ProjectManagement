@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "type":"module",
+  "type": "module",
   "scripts": {
     "dev": "tsx watch server.ts",
     "start": "node dist/server.js",
@@ -14,7 +14,8 @@
     "db:migrate:create": "prisma migrate dev --create-only",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:migrate:status": "prisma migrate status",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "admin:promote": "tsx scripts/promote-admin.ts"
   },
   "keywords": [],
   "author": "",
@@ -22,12 +23,19 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
     "dotenv": "^16.4.7",
     "express": "^5.3.0",
+    "ioredis": "^6.0.0",
+    "jsonwebtoken": "^9.0.3",
     "pg": "^8.16.3"
   },
   "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.0.0",
     "@types/pg": "^8.15.5",
     "prisma": "^7.9.1",
