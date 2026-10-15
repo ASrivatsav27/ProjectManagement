@@ -5,6 +5,7 @@ import adminRouter from "./routes/admin.route.js";
 import dashboardRouter from "./routes/dashboard.route.js";
 import projectsRouter from "./routes/projects.route.js";
 import tasksRouter from "./routes/tasks.route.js";
+import usersRouter from "./routes/users.route.js";
 import { errorHandler, notFoundHandler } from "./middleware/error.middleware.js";
 
 const app = express();
@@ -15,11 +16,12 @@ app.use(cookieParser());
 
 app.use("/api/auth", authRouter);
 app.use("/api/admin", adminRouter);
+app.use("/api/users", usersRouter);
 app.use("/api/projects", projectsRouter);
 app.use("/api/tasks", tasksRouter);
 app.use("/api/dashboard", dashboardRouter);
 
-app.get("/", (_req: Request, res: Response) => {
+app.get("/", (req: Request, res: Response) => {
   res.json({ message: "Server is running" });
 });
 
