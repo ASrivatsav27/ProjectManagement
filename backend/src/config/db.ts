@@ -2,17 +2,14 @@ import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL!,
-});
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not defined");
+}
 
-export const prisma = new PrismaClient({ adapter });
+export const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 
 export async function connectDB() {
-  try {
-    await prisma.$connect();
-    console.log("Database connected");
-  } catch (error) {
-    console.error("Database connection failed:", error);
-  }
+  await prisma.$connect();
+  console.log("Database connected");
 }

@@ -1,46 +1,39 @@
 import { Role } from "@prisma/client";
 import type { Request, Response } from "express";
 import { prisma } from "../config/db.js";
+import { currentUser } from "../utils/access.js";
+import { badRequest, conflict, notFound } from "../utils/http-error.js";
+import { parseEnum, parseId, readBody } from "../utils/validation.js";
 
+
+// PATCH /api/admin/users/:userId/role
+// Admin changes another user's role.
 export async function updateUserRoleController(req: Request, res: Response) {
-  const userId = Number(req.params.userId);
-  if (!Number.isSafeInteger(userId) || userId <= 0) {
-    return res.status(400).json({ message: "A valid user ID is required" });
-  }
+  const actor = currentUser(req);
+  const userId = parseId(req.params.userId, "user ID");
+  const role = parseEnum(Role, readBody(req).role, "role");
 
-  const requestedRole: unknown = req.body?.role;
-  if (
-    typeof requestedRole !== "string" ||
-    !Object.values(Role).includes(requestedRole as Role)
-  ) {
-    return res.status(400).json({
-      message: `Role must be one of: ${Object.values(Role).join(", ")}`,
-    });
-  }
+  // An admin cannot change their own role (prevents locking yourself out).
+  if (actor.id === userId) throw badRequest("You cannot change your own role");
 
-  if (req.user?.id === userId) {
-    return res.status(400).json({ message: "You cannot change your own role" });
-  }
-
-  const existingUser = await prisma.user.findUnique({
+  const target = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, role: true },
+    select: { role: true },
   });
 
-  if (!existingUser) {
-    return res.status(404).json({ message: "User not found" });
-  }
+  if (!target) throw notFound("User not found");
 
-  if (existingUser.role === Role.Admin && requestedRole !== Role.Admin) {
+  // Never demote the last remaining admin.
+  if (target.role === Role.Admin && role !== Role.Admin) {
     const adminCount = await prisma.user.count({ where: { role: Role.Admin } });
-    if (adminCount <= 1) {
-      return res.status(409).json({ message: "The last admin cannot be demoted" });
-    }
+
+    if (adminCount <= 1) throw conflict("The last admin cannot be demoted");
   }
 
+  // `select` keeps the password hash out of the response.
   const user = await prisma.user.update({
     where: { id: userId },
-    data: { role: requestedRole as Role },
+    data: { role },
     select: { id: true, email: true, username: true, role: true },
   });
 
